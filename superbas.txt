@@ -1,0 +1,3 @@
+Annik@1921
+DBpwd=> CF3pLDG1dBA6wH9z
+connectionstring: postgresql://postgres:CF3pLDG1dBA6wH9z@db.owufbiticpmaqteuntjq.supabase.co:5432/postgres

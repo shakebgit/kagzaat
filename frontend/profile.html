@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Kagazat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+        * { font-family: 'Noto Sans Devanagari', sans-serif; }
+        body { font-size: 15px; }
+        .text-xl  { font-size: 1rem   !important; }
+        .text-2xl { font-size: 1.2rem !important; }
+        .text-3xl { font-size: 1.4rem !important; }
+
+        /* Tab active */
+        .tab-btn { transition: all .2s; border-bottom: 2px solid transparent; padding-bottom: 12px; }
+        .tab-btn.active { border-color: #2563eb; color: #2563eb; }
+
+        /* Avatar circle */
+        .avatar-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #2563eb; color: #fff;
+            font-size: 32px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Input */
+        .form-input {
+            width: 100%; padding: 10px 14px;
+            border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: 15px; outline: none; transition: border-color .2s;
+        }
+        .form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .form-input:disabled { background: #f9fafb; color: #6b7280; }
+
+        /* Password wrapper */
+        .pw-wrapper { position: relative; }
+        .toggle-pw {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer; color: #6b7280; background: none; border: none; font-size: 1rem;
+        }
+        .toggle-pw:hover { color: #2563eb; }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid currentColor; border-top-color: transparent;
+            border-radius: 50%; animation: spin .6s linear infinite;
+            vertical-align: middle; margin-right: 4px;
+        }
+
+        /* Strength bar */
+        #pwStrengthBar { transition: width .3s, background .3s; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+     <!-- ══════════════════════════════════════════
+         NAVIGATION
+    ═══════════════════════════════════════════ -->
+    <nav class="border-b border-gray-200 sticky top-0 bg-white z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="index.html" class="text-3xl font-bold text-blue-600">Kagazat</a>
+
+                <!-- Desktop links -->
+                <div class="hidden md:flex items-center space-x-10">
+                    <a href="index.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
+                    <a href="app.html"     class="text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                    <a href="about.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
+                    <a href="lawyers.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
+                    <a href="contact.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
+                </div>
+
+                <!-- Desktop right side -->
+                <div class="hidden md:flex items-center space-x-4">
+
+                    <!-- Guest buttons -->
+                    <a href="login.html"  id="loginBtn"  class="nav-guest text-gray-700 hover:text-blue-600 text-lg font-medium">Login</a>
+                    <a href="signup.html" id="signupBtn" class="nav-guest bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 text-lg">Register</a>
+
+                    <!-- Auth: avatar + dropdown -->
+                    <div class="nav-auth relative" id="navAvatarWrapper">
+                        <button id="navAvatarTrigger"
+                                class="flex items-center gap-2 focus:outline-none"
+                                aria-haspopup="true">
+                            <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center
+                                        justify-center font-bold text-sm nav-avatar-initials select-none">
+                                ?
+                            </div>
+                            <span class="text-gray-700 font-medium text-lg nav-user-name">...</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown menu -->
+                        <div id="navDropdown"
+                             class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg
+                                    border border-gray-100 z-50">
+                            <!-- User info header -->
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Signed in as</p>
+                                <p class="text-sm font-semibold text-gray-800 truncate nav-user-name mt-0.5">...</p>
+                            </div>
+                            <!-- Menu items -->
+                            <div class="py-1">
+                                <a href="profile.html"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    मेरा प्रोफ़ाइल देखें
+                                </a>
+                                <a href="profile.html"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    प्रोफ़ाइल सम्पादित करें
+                                </a>
+                                <a href="profile.html#change-password"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                    पासवर्ड बदलें
+                                </a>
+                            </div>
+                            <!-- Logout -->
+                            <div class="border-t border-gray-100 py-1">
+                                <button onclick="handleLogout()" id="logoutBtn"
+                                        class="flex items-center gap-3 px-4 py-2.5 text-red-600
+                                               hover:bg-red-50 w-full text-left text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile hamburger -->
+                <button onclick="toggleMobileMenu()" class="md:hidden">
+                    <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200 bg-white">
+            <div class="px-6 py-6 space-y-5">
+                <a href="index.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
+                <a href="app.html"     class="block text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                <a href="about.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
+                <a href="lawyers.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
+                <a href="contact.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
+                <hr class="border-gray-200"/>
+                <!-- Guest -->
+                <div class="nav-guest space-y-3">
+                    <a href="login.html"  id="mobLoginBtn"  class="block text-gray-700 text-xl font-medium">Login</a>
+                    <a href="signup.html" id="mobSignupBtn" class="block bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-center text-xl">Register</a>
+                </div>
+                <!-- Auth -->
+                <div class="nav-auth space-y-3">
+                    <div class="flex items-center gap-3 py-2">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center
+                                    justify-center font-bold nav-avatar-initials">?</div>
+                        <span class="font-semibold text-gray-800 nav-user-name">...</span>
+                    </div>
+                    <a href="profile.html"                  class="block text-gray-700 text-xl font-medium">मेरा प्रोफ़ाइल</a>
+                    <a href="profile.html#change-password"  class="block text-gray-700 text-xl font-medium">पासवर्ड बदलें</a>
+                    <button id="mobLogoutBtn" onclick="handleLogout()"
+                            class="block w-full bg-red-600 text-white px-8 py-4 rounded-lg font-semibold text-xl">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Page Body ──────────────────────────────── -->
+    <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+
+        <!-- Page title -->
+        <div class="mb-8 flex items-center gap-4">
+            <div class="avatar-circle" id="pageAvatar">?</div>
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900" id="pageTitle">My Profile</h1>
+                <p class="text-gray-500 text-lg" id="pageEmail">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Global alert -->
+        <div id="globalAlert" class="hidden mb-6 px-4 py-3 rounded-lg text-base font-medium"></div>
+
+        <!-- ── Tabs ─────────────────────────────── -->
+        <div class="flex border-b border-gray-200 mb-8 gap-6">
+            <button id="tabProfile" onclick="switchTab('profile')"
+                    class="tab-btn active text-xl font-semibold text-gray-800">
+                प्रोफ़ाइल सम्पादित करें
+            </button>
+            <button id="tabPassword" onclick="switchTab('password')"
+                    class="tab-btn text-xl font-semibold text-gray-500">
+                पासवर्ड बदलें
+            </button>
+        </div>
+
+        <!-- ════════════════════════════════
+             TAB 1 – Edit Profile
+        ═════════════════════════════════ -->
+        <div id="panelProfile">
+            <form id="profileForm" onsubmit="saveProfile(event)" novalidate>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+                    <!-- Name -->
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">
+                                पूरा नाम <span class="text-red-500">*</span>
+                            </label>
+                            <input id="pName" type="text" required maxlength="120"
+                                   placeholder="आपका पूरा नाम"
+                                   class="form-input"/>
+                            <p id="pNameErr" class="hidden text-red-600 text-sm mt-1"></p>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">
+                                मोबाइल नंबर
+                            </label>
+                            <input id="pMobile" type="tel" maxlength="10"
+                                   placeholder="10-अंकीय मोबाइल"
+                                   class="form-input"/>
+                            <p id="pMobileErr" class="hidden text-red-600 text-sm mt-1"></p>
+                        </div>
+                    </div>
+
+                    <!-- Email (read-only) -->
+                    <div>
+                        <label class="block text-gray-700 font-semibold text-xl mb-1">
+                            ईमेल (बदला नहीं जा सकता)
+                        </label>
+                        <input id="pEmail" type="email" disabled
+                               class="form-input" placeholder="..."/>
+                    </div>
+
+                    <!-- Address -->
+                    <div>
+                        <label class="block text-gray-700 font-semibold text-xl mb-1">पता / Address</label>
+                        <textarea id="pAddress" rows="2" maxlength="500"
+                                  placeholder="मकान नं., गली, मोहल्ला..."
+                                  class="form-input resize-none"></textarea>
+                    </div>
+
+                    <!-- City / State / Country / Pincode -->
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">शहर / City</label>
+                            <input id="pCity" type="text" maxlength="80"
+                                   placeholder="Prayagraj"
+                                   class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">राज्य / State</label>
+                            <input id="pState" type="text" maxlength="80"
+                                   placeholder="Uttar Pradesh"
+                                   class="form-input"/>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">देश / Country</label>
+                            <input id="pCountry" type="text" maxlength="80"
+                                   value="India"
+                                   class="form-input"/>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-semibold text-xl mb-1">पिन कोड / Pincode</label>
+                            <input id="pPincode" type="text" maxlength="10"
+                                   placeholder="211001"
+                                   class="form-input"/>
+                        </div>
+                    </div>
+
+                    <!-- Member since -->
+                    <p class="text-gray-400 text-sm" id="memberSince"></p>
+
+                </div>
+
+                <div class="mt-5 flex gap-4 justify-end">
+                    <button type="button" onclick="loadProfile()"
+                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700
+                                   font-semibold text-lg hover:bg-gray-50 transition">
+                        रद्द करें
+                    </button>
+                    <button id="saveProfileBtn" type="submit"
+                            class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg
+                                   hover:bg-blue-700 transition disabled:opacity-60 flex items-center gap-2">
+                        प्रोफ़ाइल सहेजें
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ════════════════════════════════
+             TAB 2 – Change Password
+        ═════════════════════════════════ -->
+        <div id="panelPassword" class="hidden">
+            <form id="passwordForm" onsubmit="changePassword(event)" novalidate>
+                <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+                    <!-- Current password -->
+                    <div>
+                        <label class="block text-gray-700 font-semibold text-xl mb-1">
+                            वर्तमान पासवर्ड <span class="text-red-500">*</span>
+                        </label>
+                        <div class="pw-wrapper">
+                            <input id="currentPw" type="password" required placeholder="••••••••"
+                                   class="form-input pr-10"/>
+                            <button type="button" class="toggle-pw" onclick="togglePw('currentPw',this)">👁</button>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100"/>
+
+                    <!-- New password -->
+                    <div>
+                        <label class="block text-gray-700 font-semibold text-xl mb-1">
+                            नया पासवर्ड <span class="text-red-500">*</span>
+                        </label>
+                        <div class="pw-wrapper">
+                            <input id="newPw" type="password" required placeholder="••••••••"
+                                   oninput="checkStrength(this.value)"
+                                   class="form-input pr-10"/>
+                            <button type="button" class="toggle-pw" onclick="togglePw('newPw',this)">👁</button>
+                        </div>
+                        <div class="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="pwStrengthBar" class="h-full rounded-full w-0"></div>
+                        </div>
+                        <p id="pwStrengthText" class="text-xs mt-1 text-gray-400"></p>
+                    </div>
+
+                    <!-- Confirm new password -->
+                    <div>
+                        <label class="block text-gray-700 font-semibold text-xl mb-1">
+                            नया पासवर्ड दोहराएं <span class="text-red-500">*</span>
+                        </label>
+                        <div class="pw-wrapper">
+                            <input id="confirmPw" type="password" required placeholder="••••••••"
+                                   class="form-input pr-10"/>
+                            <button type="button" class="toggle-pw" onclick="togglePw('confirmPw',this)">👁</button>
+                        </div>
+                    </div>
+
+                    <!-- Password rules -->
+                    <ul class="text-sm text-gray-500 list-disc list-inside space-y-1">
+                        <li>कम से कम 8 अक्षर</li>
+                        <li>एक बड़ा अक्षर (A-Z)</li>
+                        <li>एक छोटा अक्षर (a-z)</li>
+                        <li>एक अंक (0-9)</li>
+                    </ul>
+
+                </div>
+
+                <div class="mt-5 flex gap-4 justify-end">
+                    <button type="button" onclick="switchTab('profile')"
+                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700
+                                   font-semibold text-lg hover:bg-gray-50 transition">
+                        रद्द करें
+                    </button>
+                    <button id="savePwBtn" type="submit"
+                            class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg
+                                   hover:bg-blue-700 transition disabled:opacity-60 flex items-center gap-2">
+                        पासवर्ड बदलें
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+
+    <script src="nav.js"></script>
+    <script>
+    const API_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+            ? "http://127.0.0.1:5000"
+            : "https://api.kagazat.in";
+
+    // ── Auth guard ────────────────────────────────────────────
+    (async function () {
+        try {
+            const r = await fetch(API_URL + "/check-auth", { credentials: "include" });
+            if (!r.ok) { window.location.href = "login.html"; return; }
+        } catch (_) {
+            window.location.href = "login.html"; return;
+        }
+        loadProfile();
+        // Auto-open password tab if hash present
+        if (window.location.hash === "#change-password") switchTab("password");
+    })();
+
+    // ── Helpers ───────────────────────────────────────────────
+    function showGlobalAlert(msg, type = "error") {
+        const el = document.getElementById("globalAlert");
+        el.textContent = msg;
+        el.className = [
+            "mb-6 px-4 py-3 rounded-lg text-base font-medium",
+            type === "error"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-700 border border-green-200",
+        ].join(" ");
+        el.classList.remove("hidden");
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (type === "success") setTimeout(() => el.classList.add("hidden"), 5000);
+    }
+
+    function setLoading(btnId, loading, defaultHtml) {
+        const btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        btn.innerHTML = loading
+            ? '<span class="spinner"></span> कृपया प्रतीक्षा करें...'
+            : defaultHtml;
+    }
+
+    function getInitials(name) {
+        if (!name) return "?";
+        return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+    }
+
+    function togglePw(id, btn) {
+        const el = document.getElementById(id);
+        el.type  = el.type === "password" ? "text" : "password";
+        btn.textContent = el.type === "password" ? "👁" : "🙈";
+    }
+
+    function checkStrength(pw) {
+        let score = 0;
+        if (pw.length >= 8)           score++;
+        if (/[A-Z]/.test(pw))         score++;
+        if (/[a-z]/.test(pw))         score++;
+        if (/[0-9]/.test(pw))         score++;
+        if (/[^A-Za-z0-9]/.test(pw))  score++;
+
+        const bar  = document.getElementById("pwStrengthBar");
+        const text = document.getElementById("pwStrengthText");
+        const widths = ["0%","20%","40%","65%","85%","100%"];
+        const colors = ["","#ef4444","#f97316","#eab308","#22c55e","#16a34a"];
+        const labels = ["","बहुत कमज़ोर","कमज़ोर","ठीक है","मजबूत","बहुत मजबूत"];
+        bar.style.width = widths[score];
+        bar.style.background = colors[score];
+        text.textContent = score ? labels[score] : "";
+        text.style.color = colors[score];
+    }
+
+    // ── Tab switching ──────────────────────────────────────────
+    function switchTab(tab) {
+        document.getElementById("globalAlert").classList.add("hidden");
+        const isProfile = tab === "profile";
+
+        document.getElementById("panelProfile").classList.toggle("hidden", !isProfile);
+        document.getElementById("panelPassword").classList.toggle("hidden", isProfile);
+        document.getElementById("tabProfile").classList.toggle("active",  isProfile);
+        document.getElementById("tabPassword").classList.toggle("active", !isProfile);
+        document.getElementById("tabProfile").classList.toggle("text-gray-800", isProfile);
+        document.getElementById("tabPassword").classList.toggle("text-gray-800", !isProfile);
+        document.getElementById("tabProfile").classList.toggle("text-gray-500", !isProfile);
+        document.getElementById("tabPassword").classList.toggle("text-gray-500", isProfile);
+    }
+
+    // ── Load profile ──────────────────────────────────────────
+    async function loadProfile() {
+        try {
+            const res  = await fetch(API_URL + "/get-profile", { credentials: "include" });
+            const data = await res.json();
+            if (data.status !== "success") throw new Error(data.message);
+
+            const p = data.profile;
+
+            document.getElementById("pName").value    = p.name    || "";
+            document.getElementById("pMobile").value  = p.mobile  || "";
+            document.getElementById("pEmail").value   = p.email   || "";
+            document.getElementById("pAddress").value = p.address || "";
+            document.getElementById("pCity").value    = p.city    || "";
+            document.getElementById("pState").value   = p.state   || "";
+            document.getElementById("pCountry").value = p.country || "India";
+            document.getElementById("pPincode").value = p.pincode || "";
+
+            // Header avatar + email
+            document.getElementById("pageAvatar").textContent = getInitials(p.name || p.email);
+            document.getElementById("pageTitle").textContent  = p.name || "My Profile";
+            document.getElementById("pageEmail").textContent  = p.email;
+
+            if (p.registered_at) {
+                const d = new Date(p.registered_at);
+                document.getElementById("memberSince").textContent =
+                    `सदस्य बने: ${d.toLocaleDateString("hi-IN", { year:"numeric", month:"long", day:"numeric" })}`;
+            }
+        } catch (e) {
+            showGlobalAlert("प्रोफ़ाइल लोड नहीं हो सकी: " + e.message);
+        }
+    }
+
+    // ── Save profile ──────────────────────────────────────────
+    async function saveProfile(e) {
+        e.preventDefault();
+        document.getElementById("globalAlert").classList.add("hidden");
+
+        const name   = document.getElementById("pName").value.trim();
+        const mobile = document.getElementById("pMobile").value.trim();
+
+        if (!name) {
+            showGlobalAlert("नाम आवश्यक है।"); return;
+        }
+        if (mobile && !/^[6-9]\d{9}$/.test(mobile)) {
+            showGlobalAlert("मोबाइल नंबर 10 अंकों का होना चाहिए (6-9 से शुरू)।"); return;
+        }
+
+        setLoading("saveProfileBtn", true, "प्रोफ़ाइल सहेजें");
+
+        try {
+            const res  = await fetch(API_URL + "/update-profile", {
+                method:  "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    name,
+                    mobile,
+                    address: document.getElementById("pAddress").value.trim(),
+                    city:    document.getElementById("pCity").value.trim(),
+                    state:   document.getElementById("pState").value.trim(),
+                    country: document.getElementById("pCountry").value.trim() || "India",
+                    pincode: document.getElementById("pPincode").value.trim(),
+                }),
+            });
+            const data = await res.json();
+
+            if (data.status === "success") {
+                showGlobalAlert("प्रोफ़ाइल सफलतापूर्वक अपडेट हुई।", "success");
+                document.getElementById("pageAvatar").textContent = getInitials(name);
+                document.getElementById("pageTitle").textContent  = name;
+            } else {
+                showGlobalAlert(data.message || "प्रोफ़ाइल अपडेट विफल।");
+            }
+        } catch (_) {
+            showGlobalAlert("नेटवर्क त्रुटि। पुनः प्रयास करें।");
+        } finally {
+            setLoading("saveProfileBtn", false, "प्रोफ़ाइल सहेजें");
+        }
+    }
+
+    // ── Change password ───────────────────────────────────────
+    async function changePassword(e) {
+        e.preventDefault();
+        document.getElementById("globalAlert").classList.add("hidden");
+
+        const currentPw  = document.getElementById("currentPw").value;
+        const newPw      = document.getElementById("newPw").value;
+        const confirmPw  = document.getElementById("confirmPw").value;
+
+        if (!currentPw) { showGlobalAlert("वर्तमान पासवर्ड दर्ज करें।"); return; }
+        if (!newPw)      { showGlobalAlert("नया पासवर्ड दर्ज करें।"); return; }
+        if (newPw !== confirmPw) { showGlobalAlert("नए पासवर्ड मेल नहीं खाते।"); return; }
+
+        setLoading("savePwBtn", true, "पासवर्ड बदलें");
+
+        try {
+            const res  = await fetch(API_URL + "/change-password", {
+                method:  "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    current_password: currentPw,
+                    new_password:     newPw,
+                    confirm_password: confirmPw,
+                }),
+            });
+            const data = await res.json();
+
+            if (data.status === "success") {
+                // Session is cleared server-side; redirect to login
+                alert("पासवर्ड सफलतापूर्वक बदल गया। कृपया पुनः login करें।");
+                window.location.href = "login.html";
+            } else {
+                showGlobalAlert(data.message || "पासवर्ड बदलने में विफल।");
+            }
+        } catch (_) {
+            showGlobalAlert("नेटवर्क त्रुटि। पुनः प्रयास करें।");
+        } finally {
+            setLoading("savePwBtn", false, "पासवर्ड बदलें");
+        }
+    }
+
+    // ── Logout ────────────────────────────────────────────────
+    async function handleLogout() {
+        await fetch(API_URL + "/logout", { method: "POST", credentials: "include" });
+        window.location.href = "login.html";
+    }
+
+    function toggleMobileMenu() {
+        document.getElementById("mobileMenu").classList.toggle("hidden");
+    }
+    </script>
+ <!-- ── Shared nav logic ─────────────────────── -->
+    <script src="nav.js"></script>
+</body>
+</html>
