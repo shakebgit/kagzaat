@@ -1076,10 +1076,6 @@ FRONTEND_FOLDER = os.path.join(os.path.dirname(__file__), "frontend")
 
 @app.route("/")
 def serve_index():
-    return "OK", 200
-
-@app.route("/app")
-def serve_app():
     return send_from_directory(FRONTEND_FOLDER, "index.html")
 
 @app.route("/<path:filename>")
@@ -1090,7 +1086,7 @@ def serve_file(filename):
 # ──────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────
-#init_db_pool()
+init_db_pool()
 
 if __name__ == "__main__":
     DEBUG_MODE = os.getenv("DEBUG", "False") == "True"
