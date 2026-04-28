@@ -1072,10 +1072,14 @@ def _send_contact_confirmation(name: str, email: str, subject: str) -> bool:
 # Static file serving
 # ──────────────────────────────────────────────
 
-FRONTEND_FOLDER = os.path.join(os.path.dirname(__file__), "../frontend")
+FRONTEND_FOLDER = os.path.join(os.path.dirname(__file__), "frontend")
 
 @app.route("/")
 def serve_index():
+    return "OK", 200
+
+@app.route("/app")
+def serve_app():
     return send_from_directory(FRONTEND_FOLDER, "index.html")
 
 @app.route("/<path:filename>")
