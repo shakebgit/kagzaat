@@ -1,8 +1,7 @@
 FROM python:3.11-slim
 
-RUN apt-get update --fix-missing && apt-get install -y \
-    libpango1.0-0 \
-    libpangocairo-1.0-0 \
+RUN apt-get update && apt-get install -y \
+    libpango-1.0-0 \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
