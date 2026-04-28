@@ -1,0 +1,9 @@
+{
+  "routes": [
+    {
+      "route": "/*",
+      "redirect": "https://kagzaat-production.up.railway.app",
+      "statusCode": 302
+    }
+  ]
+}
