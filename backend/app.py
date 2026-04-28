@@ -1086,7 +1086,10 @@ def serve_file(filename):
 # ──────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────
-init_db_pool()
+try:
+    init_db_pool()
+except Exception as e:
+    print(f"WARNING: Database pool init failed: {e}")
 
 if __name__ == "__main__":
     DEBUG_MODE = os.getenv("DEBUG", "False") == "True"
