@@ -51,6 +51,9 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5000",
     "https://kagazat.in",
     "https://www.kagazat.in",
+    "https://kagzaat-production.up.railway.app",git add .
+git commit -m "fix API URL and app.py updates"
+git push origin main
 ]
 
 CORS(
