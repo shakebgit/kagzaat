@@ -1086,7 +1086,7 @@ def serve_file(filename):
 # ──────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────
-init_db_pool()
+#init_db_pool()
 
 if __name__ == "__main__":
     DEBUG_MODE = os.getenv("DEBUG", "False") == "True"
