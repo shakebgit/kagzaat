@@ -1071,20 +1071,23 @@ def _send_contact_confirmation(name: str, email: str, subject: str) -> bool:
 # ──────────────────────────────────────────────
 # Static file serving
 # ──────────────────────────────────────────────
+
+FRONTEND_FOLDER = os.path.join(os.path.dirname(__file__), "../frontend")
+
 @app.route("/")
 def serve_index():
-    return send_from_directory("../frontend", "index.html")
-
+    return send_from_directory(FRONTEND_FOLDER, "index.html")
 
 @app.route("/<path:filename>")
 def serve_file(filename):
-    return send_from_directory("../frontend", filename)
+    return send_from_directory(FRONTEND_FOLDER, filename)
 
 
 # ──────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────
+init_db_pool()
+
 if __name__ == "__main__":
-    init_db_pool()
     DEBUG_MODE = os.getenv("DEBUG", "False") == "True"
     app.run(debug=DEBUG_MODE, port=5000)
