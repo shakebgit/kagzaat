@@ -146,7 +146,7 @@
     (async function () {
         try {
             const r = await fetch(API_URL + "/check-auth", { credentials: "include" });
-            if (r.ok) window.location.href = "app.html";
+            if (r.ok) window.location.href = "AI.html";
         } catch (_) {}
     })();
 
@@ -215,7 +215,7 @@
             const data = await res.json();
 
             if (data.status === "success") {
-                window.location.href = "app.html";
+                window.location.href = "AI.html";
             } else {
                 showAlert(data.message || "Login विफल। कृपया पुनः प्रयास करें।");
             }

@@ -64,23 +64,44 @@ const KagazatNav = (function () {
 
     // ── Dropdown ──────────────────────────────────────────────
     function initDropdown() {
-    const trigger  = document.getElementById("navAvatarTrigger");
-    const dropdown = document.getElementById("navDropdown");
-    if (!trigger || !dropdown) return;
+        const wrapper  = document.getElementById("navAvatarWrapper");
+        const trigger  = document.getElementById("navAvatarTrigger");
+        const dropdown = document.getElementById("navDropdown");
+        if (!trigger || !dropdown) return;
 
-    // Click: toggle for mobile / keyboard users
-    trigger.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const isVisible = dropdown.style.display === "block";
-        dropdown.style.display = isVisible ? "none" : "block";
-    });
+        // Ensure starts hidden
+        dropdown.style.display = "none";
 
-    // Close on outside click
-    document.addEventListener("click", (e) => {
-        if (!trigger.contains(e.target)) {
-            dropdown.style.display = "none";
+        // ── Desktop: hover on the whole wrapper (trigger + dropdown) ──
+        if (wrapper) {
+            wrapper.addEventListener("mouseenter", () => {
+                dropdown.style.display = "block";
+            });
+            wrapper.addEventListener("mouseleave", () => {
+                dropdown.style.display = "none";
+            });
         }
-    });
+
+        // ── Click: toggle (works on mobile too) ──
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isVisible = dropdown.style.display === "block";
+            dropdown.style.display = isVisible ? "none" : "block";
+        });
+
+        // ── Close on any outside click ──
+        document.addEventListener("click", (e) => {
+            if (wrapper && !wrapper.contains(e.target)) {
+                dropdown.style.display = "none";
+            } else if (!wrapper && !trigger.contains(e.target)) {
+                dropdown.style.display = "none";
+            }
+        });
+
+        // ── Keep dropdown open when hovering inside it ──
+        dropdown.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
     }
 
     // ── Logout ────────────────────────────────────────────────

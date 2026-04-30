@@ -32,7 +32,7 @@
 (async function() {
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:5000'
-        : 'https://api.kagazat.in';
+        : '';
     try {
         const response = await fetch(API_URL + '/check-auth', { credentials: 'include' });
         if (!response.ok) {
@@ -82,7 +82,7 @@
     // API_URL — nav.js handles auth state display; this is used by PDF generation
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:5000'
-        : 'https://api.kagazat.in';
+        : '';
     </script>
 <style>
 body{font-size:15px;}
@@ -107,7 +107,7 @@ body{font-size:15px;}
                 <!-- Desktop links -->
                 <div class="hidden md:flex items-center space-x-10">
                     <a href="index.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
-                    <a href="app.html"     class="text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                    <a href="AI.html"     class="text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
                     <a href="about.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
                     <a href="lawyers.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
                     <a href="contact.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
@@ -203,7 +203,7 @@ body{font-size:15px;}
         <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200 bg-white">
             <div class="px-6 py-6 space-y-5">
                 <a href="index.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
-                <a href="app.html"     class="block text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                <a href="AI.html"     class="block text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
                 <a href="about.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
                 <a href="lawyers.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
                 <a href="contact.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
@@ -694,7 +694,7 @@ async function handleGeneratePDF(e) {
             const emailStatus = data.email_sent ? '✅ ईमेल भेज दिया गया!' : '⚠️ ईमेल विफल (स्पैम चेक करें)';
             alert(`✅ PDF तैयार हो गई!\n\n${emailStatus}\n\nफ़ाइल: ${data.filename}\n\nDownloads folder और ईमेल चेक करें।`);
             // Reload form for next document
-            window.location.href = 'app.html';
+            window.location.href = 'AI.html';
         } else {
             alert('❌ PDF बनाने में विफल: ' + (data.message || 'Unknown error'));
         }

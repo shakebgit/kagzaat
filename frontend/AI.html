@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kagazat AI - हलफनामा जनरेटर</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { font-family: 'Noto Sans Devanagari', sans-serif; }
+
+  /* ── Sidebar toggle layout ── */
+  #app-shell {
+    display: flex;
+    height: calc(100vh - 57px);
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #f8f9fa;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
+  #sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* MAIN */
+  #main-content {
+    flex: 1;
+    overflow-y: auto;
+    transition: all 0.25s ease;
+  }
+
+  /* Toggle button */
+  #sidebarToggle {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  #sidebarToggle:hover { background: #f3f4f6; color: #111; }
+
+  /* Draft items */
+  .draft-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #374151;
+    transition: background 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .draft-item:hover { background: #e5e7eb; }
+  .draft-item.active { background: #dbeafe; color: #1d4ed8; }
+
+  /* Nav font overrides */
+  .nav-link { font-size: 0.9rem; color: #374151; transition: color 0.15s; }
+  .nav-link:hover { color: #2563eb; }
+
+  /* Affidavit preview */
+  #preview {
+    font-size: 0.875rem;
+    line-height: 1.8;
+    white-space: pre-line;
+    min-height: 220px;
+  }
+
+  /* Form inputs */
+  .field {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #fff;
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+  .field:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+  select.field { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+  /* Buttons */
+  .btn-primary { background: #2563eb; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 0.875rem; cursor: pointer; transition: background 0.15s; border: none; font-family: inherit; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-success { background: #16a34a; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 0.875rem; cursor: pointer; transition: background 0.15s; border: none; font-family: inherit; }
+  .btn-success:hover { background: #15803d; }
+  .btn-ghost { background: #f3f4f6; color: #374151; border-radius: 8px; padding: 10px 20px; font-size: 0.875rem; cursor: pointer; transition: background 0.15s; border: none; font-family: inherit; }
+  .btn-ghost:hover { background: #e5e7eb; }
+
+  /* Section card */
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+
+  /* Modal */
+  #previewModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+  #previewModal.open { display: flex; }
+
+  .modal-box { background: #fff; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; border-radius: 14px; padding: 28px; }
+
+  /* Affidavit paper style */
+  .affidavit-paper {
+    font-family: 'Noto Sans Devanagari', serif;
+    font-size: 0.9rem;
+    line-height: 2;
+    color: #111;
+    white-space: pre-line;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  @media (max-width: 768px) {
+    #sidebar { position: fixed; top: 57px; left: 0; bottom: 0; z-index: 40; box-shadow: 2px 0 8px rgba(0,0,0,0.15); }
+    #sidebar.collapsed { width: 0; min-width: 0; }
+  }
+</style>
+</head>
+
+<body class="bg-white text-gray-900" style="overflow:hidden;">
+
+<!-- ═══ NAV ═══ -->
+<nav style="border-bottom:1px solid #e5e7eb; background:#fff; position:sticky; top:0; z-index:50;">
+  <div style="max-width:100%; padding:0 20px; height:57px; display:flex; align-items:center; gap:16px;">
+
+    <!-- Toggle + Logo -->
+    <button id="sidebarToggle" onclick="toggleSidebar()" title="Sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+      </svg>
+    </button>
+
+    <a href="index.html" style="font-size:1.3rem; font-weight:700; color:#2563eb; text-decoration:none; margin-right:8px;">Kagazat</a>
+
+    <!-- Desktop nav links -->
+    <div class="hidden md:flex items-center gap-6" style="flex:1;">
+      <a href="index.html" class="nav-link">होम</a>
+      <a href="AI.html" class="nav-link">दस्तावेज़ बनाएं</a>
+      <a href="ai.html" class="nav-link" style="color:#2563eb; font-weight:600;">AI हलफनामा</a>
+    </div>
+
+    <!-- Auth -->
+    <div class="hidden md:flex items-center gap-3">
+      <a href="login.html" class="nav-link">Login</a>
+      <a href="signup.html" style="background:#2563eb;color:#fff;padding:7px 18px;border-radius:8px;font-size:0.875rem;text-decoration:none;">Register</a>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button class="md:hidden" onclick="toggleMobileMenu()" style="margin-left:auto; background:none; border:none; cursor:pointer; font-size:1.2rem;">☰</button>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobileMenu" style="display:none; padding:8px 20px 12px; border-top:1px solid #f3f4f6; font-size:0.875rem;">
+    <a href="index.html" style="display:block; padding:6px 0; color:#374151;">होम</a>
+    <a href="AI.html" style="display:block; padding:6px 0; color:#374151;">दस्तावेज़ बनाएं</a>
+    <a href="ai.html" style="display:block; padding:6px 0; color:#2563eb; font-weight:600;">AI हलफनामा</a>
+    <hr style="margin:8px 0; border-color:#f3f4f6;">
+    <a href="login.html" style="display:block; padding:6px 0; color:#374151;">Login</a>
+    <a href="signup.html" style="display:block; padding:6px 0; color:#2563eb;">Register</a>
+  </div>
+</nav>
+
+<!-- ═══ APP SHELL ═══ -->
+<div id="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside id="sidebar">
+    <div style="padding:16px 12px; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <span style="font-size:0.8rem; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em;">पिछले ड्राफ्ट</span>
+      </div>
+
+      <!-- Draft list -->
+      <div id="historyList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+        <div class="draft-item active">नाम परिवर्तन - आज</div>
+        <div class="draft-item">पता परिवर्तन - कल</div>
+        <div class="draft-item">जन्म तिथि सुधार - 3 दिन पहले</div>
+      </div>
+
+      <!-- New draft button -->
+      <div style="padding-top:12px; border-top:1px solid #e5e7eb;">
+        <button onclick="createNewDraft()" class="btn-primary" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          नया ड्राफ्ट
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main id="main-content" style="padding:24px 32px; background:#fafafa;">
+
+    <div style="max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
+
+      <!-- Page title -->
+      <div>
+        <h1 style="font-size:1.35rem; font-weight:700; color:#111; margin:0 0 4px;">AI हलफनामा जनरेटर</h1>
+        <p style="font-size:0.82rem; color:#6b7280; margin:0;">अपनी जानकारी भरें — हलफनामा तुरंत तैयार होगा</p>
+      </div>
+
+      <!-- ── STEP 1: Filters ── -->
+      <div class="card">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">राज्य</label>
+            <select id="state" class="field">
+              <option>उत्तर प्रदेश</option>
+              <option>दिल्ली</option>
+              <option>महाराष्ट्र</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">शहर</label>
+            <select id="city" class="field">
+              <option>प्रयागराज</option>
+              <option>लखनऊ</option>
+              <option>वाराणसी</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">न्यायालय</label>
+            <select id="court" class="field">
+              <option>जिला न्यायालय</option>
+              <option>उच्च न्यायालय</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">विभाग</label>
+            <select id="department" class="field">
+              <option>UIDAI</option>
+              <option>पासपोर्ट</option>
+              <option>राशन कार्ड</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">उद्देश्य</label>
+            <input id="purpose" class="field" placeholder="जैसे: नाम परिवर्तन, पता सुधार...">
+          </div>
+          <button onclick="showUserForm()" class="btn-primary" style="white-space:nowrap; height:40px;">
+            शुरू करें →
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: User details (hidden initially) ── -->
+      <div id="userDetailsForm" style="display:none;" class="card">
+        <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 14px;">अपनी जानकारी भरें</h3>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">पूरा नाम</label>
+            <input id="fullName" class="field" placeholder="जैसे: राम कुमार शर्मा">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">पिता / पति का नाम</label>
+            <input id="fatherName" class="field" placeholder="जैसे: मोहन लाल शर्मा">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">उम्र</label>
+            <input id="age" class="field" placeholder="जैसे: 35" type="number">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">दिनांक</label>
+            <input id="docDate" class="field" type="date">
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label style="font-size:0.75rem; color:#6b7280; display:block; margin-bottom:4px;">पूरा पता</label>
+          <textarea id="address" class="field" rows="2" placeholder="मकान नंबर, मोहल्ला, शहर, जिला, पिनकोड"></textarea>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Live Preview ── -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <h2 style="font-size:0.95rem; font-weight:600; margin:0;">लाइव प्रीव्यू</h2>
+          <div style="display:flex; gap:8px;">
+            <button onclick="openPreviewModal()" class="btn-success" style="padding:7px 16px; font-size:0.8rem;">
+              पूरा प्रीव्यू देखें →
+            </button>
+          </div>
+        </div>
+
+        <!-- Paper-style preview -->
+        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:28px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div id="preview" class="affidavit-paper" style="color:#9ca3af;">
+यहाँ आपका हलफनामा दिखाई देगा...
+
+जानकारी भरने के बाद यह स्वतः अपडेट होता रहेगा।</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══ PREVIEW MODAL ═══ -->
+<div id="previewModal">
+  <div class="modal-box">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+      <h3 style="font-size:1rem; font-weight:700; margin:0;">आपका हलफनामा</h3>
+      <button onclick="closeModal()" style="background:none; border:none; cursor:pointer; color:#6b7280; font-size:1.2rem;">✕</button>
+    </div>
+
+    <!-- Affidavit paper look -->
+    <div style="background:#fffef9; border:1px solid #e5e7eb; border-radius:8px; padding:36px 40px; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.03);">
+      <div id="modalContent" class="affidavit-paper"></div>
+    </div>
+
+    <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="window.print()" class="btn-primary">🖨️ प्रिंट करें</button>
+      <button onclick="closeModal()" class="btn-ghost">बंद करें</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Sidebar toggle ── */
+  let sidebarOpen = true;
+
+  function toggleSidebar() {
+    sidebarOpen = !sidebarOpen;
+    document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+  }
+
+  function toggleMobileMenu() {
+    const m = document.getElementById('mobileMenu');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+
+  /* ── Show user form ── */
+  function showUserForm() {
+    const form = document.getElementById('userDetailsForm');
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ── Live preview ── */
+  document.addEventListener('input', updatePreview);
+
+  function getTodayDate() {
+    const d = document.getElementById('docDate')?.value;
+    if (d) {
+      const dt = new Date(d);
+      return dt.toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    return new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function updatePreview() {
+    const name      = document.getElementById('fullName')?.value.trim()   || '________';
+    const father    = document.getElementById('fatherName')?.value.trim() || '________';
+    const age       = document.getElementById('age')?.value               || '__';
+    const address   = document.getElementById('address')?.value.trim()    || '________';
+    const purpose   = document.getElementById('purpose')?.value.trim()    || '________';
+    const court     = document.getElementById('court')?.value             || 'जिला न्यायालय';
+    const city      = document.getElementById('city')?.value              || 'प्रयागराज';
+    const dept      = document.getElementById('department')?.value        || 'UIDAI';
+    const date      = getTodayDate();
+
+    const draft = `हलफनामा
+(शपथ पत्र)
+
+${court}, ${city}
+
+मैं, ${name}, पुत्र/पुत्री श्री ${father}, आयु ${age} वर्ष,
+निवासी — ${address},
+
+सत्यनिष्ठा से शपथ लेकर यह घोषणा करता/करती हूँ कि:
+
+1. मेरा उद्देश्य ${purpose} है।
+
+2. उक्त कार्य ${dept} विभाग से संबंधित है।
+
+3. यह घोषणा पूर्णतः सत्य है और किसी भी असत्य
+   कथन के लिए मैं पूर्णतः उत्तरदायी हूँ।
+
+दिनांक: ${date}
+
+                                    हस्ताक्षर: __________
+                                    नाम: ${name}`;
+
+    const el = document.getElementById('preview');
+    el.innerText = draft;
+    el.style.color = '#111';
+  }
+
+  /* ── Modal ── */
+  function openPreviewModal() {
+    const content = document.getElementById('preview').innerText;
+    if (!content || content.includes('यहाँ आपका')) {
+      alert('पहले जानकारी भरें');
+      return;
+    }
+    document.getElementById('modalContent').innerText = content;
+    document.getElementById('previewModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('previewModal').classList.remove('open');
+  }
+
+  /* ── New draft ── */
+  function createNewDraft() {
+    ['fullName','fatherName','age','address','docDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('purpose').value = '';
+    document.getElementById('preview').innerText = 'यहाँ आपका हलफनामा दिखाई देगा...\n\nजानकारी भरने के बाद यह स्वतः अपडेट होता रहेगा।';
+    document.getElementById('preview').style.color = '#9ca3af';
+    document.getElementById('userDetailsForm').style.display = 'none';
+  }
+
+  /* Close modal on backdrop click */
+  document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  /* Set today's date by default */
+  window.addEventListener('DOMContentLoaded', () => {
+    const d = document.getElementById('docDate');
+    if (d) d.valueAsDate = new Date();
+  });
+</script>
+
+</body>
+</html>

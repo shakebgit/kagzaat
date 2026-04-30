@@ -29,6 +29,11 @@ from functools import wraps
 import resend
 import base64
 
+# ── New blueprints ────────────────────────────────────────────
+from routes.location import location_bp
+from routes.lookup   import lookup_bp
+from routes.template import template_bp
+from routes.affidavit import affidavit_bp
 # ──────────────────────────────────────────────
 # Boot
 # ──────────────────────────────────────────────
@@ -67,6 +72,14 @@ CORS(
         }
     },
 )
+
+# ── Register blueprints ───────────────────────────────────────
+# app.register_blueprint(auth_bp)          # your existing auth
+app.register_blueprint(location_bp)
+app.register_blueprint(lookup_bp)
+app.register_blueprint(template_bp)
+app.register_blueprint(affidavit_bp)
+
 
 # ──────────────────────────────────────────────
 # Rate Limiting
@@ -178,8 +191,10 @@ def require_auth(f):
             data = jwt.decode(
                 token, app.config["SECRET_KEY"], algorithms=["HS256"]
             )
+            request.user_id    = data.get("sub", "")   
             request.user_email = data["email"]
             request.user_name  = data.get("name", "")
+            
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Session expired"}), 401
         except Exception:
@@ -205,6 +220,7 @@ def login():
         data     = request.json
         email    = sanitize_input(data.get("email"))
         password = data.get("password", "")
+        user_id= data.get("id", "")
 
         if not validate_email(email):
             return jsonify({"status": "fail", "message": "Invalid email format"}), 400
@@ -212,18 +228,19 @@ def login():
         with get_db_connection() as conn:
             cur = conn.cursor()
             cur.execute(
-                "SELECT email, password, name FROM userdetails WHERE email = %s AND is_active = TRUE",
+                "SELECT userid,email, password, name FROM userdetails WHERE email = %s AND is_active = TRUE",
                 (email,),
             )
             user = cur.fetchone()
 
-            if user and check_password_hash(user[1], password):
+            if user and check_password_hash(user[2], password):
                 cur.execute(
                     "UPDATE userdetails SET last_login_at = NOW() WHERE email = %s",
                     (email,),
                 )
                 write_audit(cur, email, "LOGIN")
-                user_name = user[2] or ""
+                user_id   = str(user[0])   # ← add this
+                user_name = user[3] or ""  # ← name now index [3]
             else:
                 cur.close()
                 return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
@@ -232,9 +249,10 @@ def login():
 
         token = jwt.encode(
             {
-                "email": email,
-                "name":  user_name,
-                "exp":   datetime.utcnow() + timedelta(hours=24),
+                 "sub":   user_id,      # ← add this                
+                 "email": email,
+                 "name":  user_name,
+                 "exp":   datetime.utcnow() + timedelta(hours=24),
             },
             app.config["SECRET_KEY"],
             algorithm="HS256",
@@ -315,6 +333,7 @@ def register():
 def check_auth():
     return jsonify({
         "status": "authenticated",
+        "id":     request.user_id,    # ← add this
         "email":  request.user_email,
         "name":   request.user_name,
     })

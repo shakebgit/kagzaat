@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kagazat AI - हलफनामा जनरेटर</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { font-family: 'Noto Sans Devanagari', sans-serif; box-sizing: border-box; }
+
+  html { font-size: 16px; }
+
+  /* ── Sidebar toggle layout ── */
+  #app-shell {
+    display: flex;
+    overflow: hidden;
+    /* height driven by body flex — fills remaining viewport */
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 260px;
+    min-width: 260px;
+    min-height: 0;
+    background: #f8f9fa;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
+  #sidebar.collapsed { width: 0; min-width: 0; opacity: 0; pointer-events: none; }
+
+  /* MAIN */
+  #main-content {
+    flex: 1;
+    min-height: 0;             /* allow shrinking in flex parent */
+    overflow: hidden;          /* no page scroll */
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+  }
+
+  /* The inner wrapper fills height and becomes scrollable column */
+  #mainInner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;          /* clips children */
+    padding: 24px 32px;
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  /* Step 1 filter card — fixed height, no scroll needed */
+  #filterCard { flex-shrink: 0; }
+
+  /* Step 2 user details — fixed height, no scroll needed */
+  #detailsCard { flex-shrink: 0; }
+
+  /* Step 3 preview card — takes remaining space, scrolls inside */
+  #previewCard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;             /* critical for flex children to shrink */
+  }
+
+  /* The paper box inside preview card scrolls */
+  #previewPaper {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  /* Toggle button */
+  #sidebarToggle {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; cursor: pointer; transition: background 0.15s;
+    color: #6b7280; flex-shrink: 0; background: none; border: none;
+  }
+  #sidebarToggle:hover { background: #f3f4f6; color: #111; }
+
+  /* Draft items */
+  .draft-item {
+    padding: 9px 13px; border-radius: 6px; cursor: pointer;
+    font-size: 0.938rem; color: #374151; transition: background 0.15s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .draft-item:hover { background: #e5e7eb; }
+  .draft-item.active { background: #dbeafe; color: #1d4ed8; }
+
+  /* Nav */
+  .nav-link { font-size: 1rem; color: #374151; transition: color 0.15s; text-decoration: none; }
+  .nav-link:hover { color: #2563eb; }
+
+  /* Form inputs */
+  .field {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 8px;
+    padding: 11px 14px; font-size: 1rem; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #fff; font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+  .field:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  select.field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 32px; cursor: pointer;
+  }
+
+  /* Buttons */
+  .btn-primary  { background:#2563eb; color:#fff; border-radius:8px; padding:11px 22px; font-size:1rem; cursor:pointer; transition:background 0.15s; border:none; font-family:inherit; font-weight:500; }
+  .btn-primary:hover  { background:#1d4ed8; }
+  .btn-success  { background:#16a34a; color:#fff; border-radius:8px; padding:11px 22px; font-size:1rem; cursor:pointer; transition:background 0.15s; border:none; font-family:inherit; font-weight:500; }
+  .btn-success:hover  { background:#15803d; }
+  .btn-ghost    { background:#f3f4f6; color:#374151; border-radius:8px; padding:11px 22px; font-size:1rem; cursor:pointer; transition:background 0.15s; border:none; font-family:inherit; }
+  .btn-ghost:hover    { background:#e5e7eb; }
+  .btn-reset    { background:none; border:1px solid #d1d5db; color:#6b7280; border-radius:8px; padding:8px 15px; font-size:0.875rem; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .btn-reset:hover    { border-color:#ef4444; color:#ef4444; }
+
+  /* Card */
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:22px; }
+
+  /* ── Editable preview ── */
+  #preview {
+    font-family: 'Noto Sans Devanagari', serif;
+    font-size: 1rem;
+    line-height: 2.1;
+    color: #111;
+    white-space: pre-wrap;
+    outline: none;
+    min-height: 220px;
+    cursor: text;
+  }
+  #preview.placeholder { color: #9ca3af; cursor: default; }
+  #preview[contenteditable="true"] {
+    border-radius: 6px;
+    transition: box-shadow 0.15s;
+  }
+  #preview[contenteditable="true"]:focus {
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+  }
+
+  /* Hint bar */
+  .hint-bar {
+    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+    padding: 9px 14px; font-size: 0.875rem; color: #78350f;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+
+  /* Badges */
+  .badge-edit   { font-size:0.75rem; background:#fef3c7; color:#92400e; border:1px solid #fcd34d; padding:2px 9px; border-radius:20px; font-weight:500; }
+  .badge-manual { font-size:0.75rem; background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; padding:2px 9px; border-radius:20px; font-weight:500; }
+
+  /* Modal */
+  #previewModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px; }
+  #previewModal.open { display:flex; }
+  .modal-box { background:#fff; width:100%; max-width:700px; max-height:88vh; overflow-y:auto; border-radius:14px; padding:32px; }
+
+  /* Modal print area */
+  #modalContent {
+    font-family: 'Noto Sans Devanagari', serif;
+    font-size: 1rem; line-height: 2.1; color: #111; white-space: pre-wrap;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  /* Print — only the affidavit content */
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea {
+      display: block !important;
+      font-family: 'Noto Sans Devanagari', serif;
+      font-size: 14pt;
+      line-height: 2.2;
+      color: #000;
+      padding: 40px;
+      white-space: pre-wrap;
+    }
+  }
+
+  @media (max-width: 768px) {
+    #sidebar { position:fixed; top:64px; left:0; bottom:0; z-index:40; box-shadow:2px 0 8px rgba(0,0,0,0.15); }
+    #sidebar.collapsed { width:0; min-width:0; }
+  }
+</style>
+</head>
+
+<body class="bg-white text-gray-900" style="overflow:hidden; display:flex; flex-direction:column; height:100vh;">
+
+<!-- Hidden print area -->
+<div id="printArea" style="display:none;"></div>
+
+    <!-- ══════════════════════════════════════════
+         NAVIGATION
+    ═══════════════════════════════════════════ -->
+    <nav class="border-b border-gray-200 sticky top-0 bg-white z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="index.html" class="text-3xl font-bold text-blue-600">Kagazat</a>
+
+                <!-- Desktop links -->
+                <div class="hidden md:flex items-center space-x-10">
+                    <a href="index.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
+                    <a href="app.html"     class="text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                    <a href="about.html"   class="text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
+                    <a href="lawyers.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
+                    <a href="contact.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
+                </div>
+
+                <!-- Desktop right side -->
+                <div class="hidden md:flex items-center space-x-4">
+
+                    <!-- Guest buttons -->
+                    <a href="login.html"  id="loginBtn"  class="nav-guest text-gray-700 hover:text-blue-600 text-lg font-medium">Login</a>
+                    <a href="signup.html" id="signupBtn" class="nav-guest bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 text-lg">Register</a>
+
+                    <!-- Auth: avatar + dropdown -->
+                    <div class="nav-auth relative" id="navAvatarWrapper" style="position:relative;">
+                        <button id="navAvatarTrigger"
+                                class="flex items-center gap-2 focus:outline-none"
+                                aria-haspopup="true">
+                            <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center
+                                        justify-center font-bold text-sm nav-avatar-initials select-none">
+                                ?
+                            </div>
+                            <span class="text-gray-700 font-medium text-lg nav-user-name">...</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown menu -->
+                        <div id="navDropdown"
+                             class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg
+                                    border border-gray-100 z-50"
+                             style="display:none;">
+                            <!-- User info header -->
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Signed in as</p>
+                                <p class="text-sm font-semibold text-gray-800 truncate nav-user-name mt-0.5">...</p>
+                            </div>
+                            <!-- Menu items -->
+                            <div class="py-1">
+                                <a href="profile.html"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    मेरा प्रोफ़ाइल देखें
+                                </a>
+                                <a href="profile.html"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    प्रोफ़ाइल सम्पादित करें
+                                </a>
+                                <a href="profile.html#change-password"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-gray-700
+                                          hover:bg-blue-50 hover:text-blue-700 text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                    पासवर्ड बदलें
+                                </a>
+                            </div>
+                            <!-- Logout -->
+                            <div class="border-t border-gray-100 py-1">
+                                <button onclick="handleLogout()" id="logoutBtn"
+                                        class="flex items-center gap-3 px-4 py-2.5 text-red-600
+                                               hover:bg-red-50 w-full text-left text-base font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile hamburger -->
+                <button onclick="toggleMobileMenu()" class="md:hidden">
+                    <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200 bg-white">
+            <div class="px-6 py-6 space-y-5">
+                <a href="index.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">होम</a>
+                <a href="app.html"     class="block text-gray-700 hover:text-blue-600 text-lg font-medium">दस्तावेज़ बनाएं</a>
+                <a href="about.html"   class="block text-gray-700 hover:text-blue-600 text-lg font-medium">हमारे बारे में</a>
+                <a href="lawyers.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">वकील पैनल</a>
+                <a href="contact.html" class="block text-gray-700 hover:text-blue-600 text-lg font-medium">संपर्क</a>
+                <hr class="border-gray-200"/>
+                <!-- Guest -->
+                <div class="nav-guest space-y-3">
+                    <a href="login.html"  id="mobLoginBtn"  class="block text-gray-700 text-xl font-medium">Login</a>
+                    <a href="signup.html" id="mobSignupBtn" class="block bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-center text-xl">Register</a>
+                </div>
+                <!-- Auth -->
+                <div class="nav-auth space-y-3">
+                    <div class="flex items-center gap-3 py-2">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center
+                                    justify-center font-bold nav-avatar-initials">?</div>
+                        <span class="font-semibold text-gray-800 nav-user-name">...</span>
+                    </div>
+                    <a href="profile.html"                  class="block text-gray-700 text-xl font-medium">मेरा प्रोफ़ाइल</a>
+                    <a href="profile.html#change-password"  class="block text-gray-700 text-xl font-medium">पासवर्ड बदलें</a>
+                    <button id="mobLogoutBtn" onclick="handleLogout()"
+                            class="block w-full bg-red-600 text-white px-8 py-4 rounded-lg font-semibold text-xl">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<!-- ═══ APP SHELL ═══ -->
+<div id="app-shell" style="flex:1; min-height:0;">
+
+  <!-- ── SIDEBAR ── -->
+  <aside id="sidebar">
+    <div style="padding:16px 12px; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <span style="font-size:0.875rem; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em;">पिछले ड्राफ्ट</span>
+      </div>
+      <div id="historyList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+        <div class="draft-item active">नाम परिवर्तन - आज</div>
+        <div class="draft-item">पता परिवर्तन - कल</div>
+        <div class="draft-item">जन्म तिथि सुधार - 3 दिन पहले</div>
+      </div>
+      <div style="padding-top:12px; border-top:1px solid #e5e7eb;">
+        <button onclick="createNewDraft()" class="btn-primary" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          नया ड्राफ्ट
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main id="main-content" style="background:#fafafa;">
+    <div id="mainInner">
+
+      <!-- Title -->
+      <div style="flex-shrink:0;">
+        <h1 style="font-size:1.5rem; font-weight:700; color:#111; margin:0 0 6px;">AI हलफनामा जनरेटर</h1>
+        <p style="font-size:1rem; color:#6b7280; margin:0;">अपनी जानकारी भरें — हलफनामा तुरंत तैयार होगा</p>
+      </div>
+
+      <!-- ── STEP 1: Filters ── -->
+      <div class="card" id="filterCard">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">राज्य</label>
+            <select id="state" class="field">
+              <option>उत्तर प्रदेश</option>
+              <option>दिल्ली</option>
+              <option>महाराष्ट्र</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">शहर</label>
+            <select id="city" class="field">
+              <option>प्रयागराज</option>
+              <option>लखनऊ</option>
+              <option>वाराणसी</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">न्यायालय</label>
+            <select id="court" class="field">
+              <option>जिला न्यायालय</option>
+              <option>उच्च न्यायालय</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">विभाग</label>
+            <select id="department" class="field">
+              <option>UIDAI</option>
+              <option>पासपोर्ट</option>
+              <option>राशन कार्ड</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">उद्देश्य / हलफनामे का प्रकार</label>
+            <!-- Dropdown -->
+            <select id="purposeSelect" class="field" onchange="handlePurposeSelect(this.value)">
+              <option value="">— प्रकार चुनें —</option>
+              <option value="आधार कार्ड में नाम परिवर्तन">आधार कार्ड में नाम परिवर्तन</option>
+              <option value="पासपोर्ट हेतु नाम परिवर्तन">पासपोर्ट हेतु नाम परिवर्तन</option>
+              <option value="राशन कार्ड में नाम सुधार">राशन कार्ड में नाम सुधार</option>
+              <option value="जन्म तिथि सुधार">जन्म तिथि सुधार</option>
+              <option value="पता परिवर्तन">पता परिवर्तन</option>
+              <option value="विवाह के बाद नाम परिवर्तन">विवाह के बाद नाम परिवर्तन</option>
+              <option value="आय प्रमाण पत्र हेतु शपथपत्र">आय प्रमाण पत्र हेतु शपथपत्र</option>
+              <option value="निवास प्रमाण हेतु शपथपत्र">निवास प्रमाण हेतु शपथपत्र</option>
+              <option value="वाहन हस्तांतरण हेतु शपथपत्र">वाहन हस्तांतरण हेतु शपथपत्र</option>
+              <option value="छात्रवृत्ति हेतु शपथपत्र">छात्रवृत्ति हेतु शपथपत्र</option>
+              <option value="other">अन्य (Other) — खुद लिखें</option>
+            </select>
+            <!-- Custom text box — shown only when "अन्य" selected -->
+            <input id="purposeCustom" class="field" placeholder="अपना उद्देश्य लिखें..."
+              style="display:none; margin-top:8px;">
+            <!-- Hidden unified value field read by buildDraft() -->
+            <input id="purpose" type="hidden" value="">
+          </div>
+          <button onclick="showUserForm()" class="btn-primary" style="white-space:nowrap; height:44px;">
+            शुरू करें →
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: User details ── -->
+      <div id="userDetailsForm" style="display:none; flex-shrink:0;" class="card">
+        <h3 style="font-size:1.1rem; font-weight:600; margin:0 0 16px;">अपनी जानकारी भरें</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">पूरा नाम</label>
+            <input id="fullName" class="field" placeholder="जैसे: राम कुमार शर्मा">
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">पिता / पति का नाम</label>
+            <input id="fatherName" class="field" placeholder="जैसे: मोहन लाल शर्मा">
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">उम्र</label>
+            <input id="age" class="field" placeholder="जैसे: 35" type="number">
+          </div>
+          <div>
+            <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">दिनांक</label>
+            <input id="docDate" class="field" type="date">
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <label style="font-size:0.875rem; color:#6b7280; display:block; margin-bottom:5px;">पूरा पता</label>
+          <textarea id="address" class="field" rows="2" placeholder="मकान नंबर, मोहल्ला, शहर, जिला, पिनकोड"></textarea>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Live Preview (EDITABLE) ── -->
+      <div class="card" id="previewCard">
+
+        <!-- Header row -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h2 style="font-size:1.1rem; font-weight:600; margin:0;">लाइव प्रीव्यू</h2>
+            <span id="editBadge"   style="display:none;" class="badge-edit">✏️ संपादन योग्य</span>
+            <span id="manualBadge" style="display:none;" class="badge-manual">✍️ मैन्युअल संपादित</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button id="resetBtn" onclick="resetToAutoPreview()" style="display:none;" class="btn-reset">
+              ↺ फ़ॉर्म से रीसेट
+            </button>
+            <button onclick="openPreviewModal()" class="btn-success" style="padding:9px 18px; font-size:0.95rem;">
+              🖨️ प्रिंट / सहेजें →
+            </button>
+          </div>
+        </div>
+
+        <!-- Hint bar -->
+        <div id="editHint" style="display:none;" class="hint-bar">
+          <span style="font-size:1.1rem;">💡</span>
+          <span>आप इस बॉक्स में सीधे क्लिक करके टाइप कर सकते हैं — लाइन जोड़ें, हटाएं या कोई भी बदलाव करें।</span>
+        </div>
+
+        <!-- Editable paper -->
+        <div id="previewPaper" style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:28px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06); position:relative;">
+          <!-- Cursor hint icon (top-right corner) -->
+          <div id="pencilHint" style="display:none; position:absolute; top:10px; right:12px; color:#d1d5db;" title="सीधे यहाँ टाइप करें">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </div>
+
+          <div
+            id="preview"
+            class="placeholder"
+            contenteditable="false"
+            spellcheck="false"
+            data-user-edited="false"
+          >यहाँ आपका हलफनामा दिखाई देगा...
+
+जानकारी भरने के बाद यह स्वतः अपडेट होता रहेगा।</div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ PRINT / PREVIEW MODAL ═══ -->
+<div id="previewModal">
+  <div class="modal-box">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+      <h3 style="font-size:1.2rem; font-weight:700; margin:0;">आपका हलफनामा</h3>
+      <button onclick="closeModal()" style="background:none; border:none; cursor:pointer; color:#6b7280; font-size:1.2rem; line-height:1;">✕</button>
+    </div>
+
+    <!-- Paper preview in modal (also editable for last-minute tweaks) -->
+    <div style="background:#fffef9; border:1px solid #e5e7eb; border-radius:8px; padding:36px 40px; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.03);">
+      <div id="modalContent" contenteditable="true" spellcheck="false"
+        style="font-family:'Noto Sans Devanagari',serif; font-size:1rem; line-height:2.1; color:#111; white-space:pre-wrap; outline:none; min-height:160px;">
+      </div>
+    </div>
+
+    <p style="font-size:0.8rem; color:#9ca3af; margin:10px 0 0; text-align:right;">
+      💡 यहाँ भी अंतिम बदलाव कर सकते हैं
+    </p>
+
+    <div style="margin-top:14px; display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="doPrint()" class="btn-primary">🖨️ प्रिंट करें</button>
+      <button onclick="closeModal()" class="btn-ghost">बंद करें</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ════════════════════════════════
+     STATE
+  ════════════════════════════════ */
+  let sidebarOpen  = true;
+  let userEdited   = false;   // true once user manually types in #preview
+  let autoText     = '';      // last auto-generated text (for reset)
+
+  const preview    = document.getElementById('preview');
+  const editBadge  = document.getElementById('editBadge');
+  const manualBadge= document.getElementById('manualBadge');
+  const resetBtn   = document.getElementById('resetBtn');
+  const editHint   = document.getElementById('editHint');
+  const pencilHint = document.getElementById('pencilHint');
+
+  /* ════════════════════════════════
+     SIDEBAR
+  ════════════════════════════════ */
+  function toggleSidebar() {
+    sidebarOpen = !sidebarOpen;
+    document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+  }
+
+  function toggleMobileMenu() {
+    const m = document.getElementById('mobileMenu');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+
+  /* ════════════════════════════════
+     SHOW USER FORM
+  ════════════════════════════════ */
+  function showUserForm() {
+    const form = document.getElementById('userDetailsForm');
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ════════════════════════════════
+     DATE HELPER
+  ════════════════════════════════ */
+  function getTodayDate() {
+    const d = document.getElementById('docDate')?.value;
+    if (d) {
+      return new Date(d).toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    return new Date().toLocaleDateString('hi-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  /* ════════════════════════════════
+     BUILD AFFIDAVIT TEXT
+  ════════════════════════════════ */
+  function buildDraft() {
+    const name   = document.getElementById('fullName')?.value.trim()   || '________';
+    const father = document.getElementById('fatherName')?.value.trim() || '________';
+    const age    = document.getElementById('age')?.value               || '__';
+    const addr   = document.getElementById('address')?.value.trim()    || '________';
+    const purp   = document.getElementById('purpose')?.value.trim()    || '________';
+    const court  = document.getElementById('court')?.value             || 'जिला न्यायालय';
+    const city   = document.getElementById('city')?.value              || 'प्रयागराज';
+    const dept   = document.getElementById('department')?.value        || 'UIDAI';
+    const date   = getTodayDate();
+
+    return `हलफनामा
+(शपथ पत्र)
+
+${court}, ${city}
+
+मैं, ${name}, पुत्र/पुत्री श्री ${father}, आयु ${age} वर्ष,
+निवासी — ${addr},
+
+सत्यनिष्ठा से शपथ लेकर यह घोषणा करता/करती हूँ कि:
+
+1. मेरा उद्देश्य ${purp} है।
+
+2. उक्त कार्य ${dept} विभाग से संबंधित है।
+
+3. यह घोषणा पूर्णतः सत्य है और किसी भी असत्य
+   कथन के लिए मैं पूर्णतः उत्तरदायी हूँ।
+
+दिनांक: ${date}
+
+                                    हस्ताक्षर: __________
+                                    नाम: ${name}`;
+  }
+
+  /* ════════════════════════════════
+     PURPOSE DROPDOWN HANDLER
+  ════════════════════════════════ */
+  function handlePurposeSelect(val) {
+    const customBox = document.getElementById('purposeCustom');
+    const hidden    = document.getElementById('purpose');
+    if (val === 'other') {
+      customBox.style.display = 'block';
+      customBox.focus();
+      hidden.value = '';
+    } else {
+      customBox.style.display = 'none';
+      hidden.value = val;
+      updatePreview();
+    }
+  }
+
+  // Custom text box also triggers preview
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('purposeCustom').addEventListener('input', function() {
+      document.getElementById('purpose').value = this.value;
+      updatePreview();
+    });
+  });
+
+  /* ════════════════════════════════
+     AUTO-UPDATE PREVIEW (from form)
+     Only runs if user hasn't manually edited
+  ════════════════════════════════ */
+  function updatePreview() {
+    if (userEdited) return;   // user is in control — don't overwrite
+
+    const draft = buildDraft();
+    autoText = draft;
+
+    preview.textContent = draft;
+    preview.classList.remove('placeholder');
+    preview.style.color = '#111';
+    preview.contentEditable = 'true';
+
+    // Show UI chrome
+    editBadge.style.display  = 'inline-flex';
+    editHint.style.display   = 'flex';
+    pencilHint.style.display = 'block';
+  }
+
+  /* Listen to all form fields */
+  document.addEventListener('input', function(e) {
+    if (e.target.id !== 'preview') updatePreview();
+  });
+
+  /* ════════════════════════════════
+     DETECT MANUAL EDIT IN PREVIEW
+  ════════════════════════════════ */
+  preview.addEventListener('input', function() {
+    if (!userEdited) {
+      userEdited = true;
+      manualBadge.style.display = 'inline-flex';
+      resetBtn.style.display    = 'inline-block';
+      // Keep edit badge but update label
+      editBadge.textContent = '✏️ संपादन योग्य';
+    }
+  });
+
+  /* ════════════════════════════════
+     RESET to auto-generated text
+  ════════════════════════════════ */
+  function resetToAutoPreview() {
+    if (!confirm('फ़ॉर्म की जानकारी से प्रीव्यू रीसेट करें?\nआपके मैन्युअल बदलाव हट जाएंगे।')) return;
+    userEdited = false;
+    manualBadge.style.display = 'none';
+    resetBtn.style.display    = 'none';
+    updatePreview();
+  }
+
+  /* ════════════════════════════════
+     MODAL
+  ════════════════════════════════ */
+  function openPreviewModal() {
+    const text = preview.textContent || preview.innerText || '';
+    if (!text.trim() || text.includes('यहाँ आपका')) {
+      alert('पहले जानकारी भरें');
+      return;
+    }
+    document.getElementById('modalContent').textContent = text;
+    document.getElementById('previewModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('previewModal').classList.remove('open');
+  }
+
+  /* Print — pulls from modal (which may have last-minute modal edits) */
+  function doPrint() {
+    const content = document.getElementById('modalContent').textContent
+                  || document.getElementById('modalContent').innerText;
+    const pa = document.getElementById('printArea');
+    pa.textContent = content;
+    pa.style.display = 'block';
+    window.print();
+    pa.style.display = 'none';
+  }
+
+  document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  /* ════════════════════════════════
+     NEW DRAFT
+  ════════════════════════════════ */
+  function createNewDraft() {
+    ['fullName','fatherName','age','address','docDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('purpose').value = '';
+    document.getElementById('purposeSelect').value = '';
+    document.getElementById('purposeCustom').style.display = 'none';
+    document.getElementById('purposeCustom').value = '';
+
+    userEdited = false;
+    autoText   = '';
+    preview.textContent     = 'यहाँ आपका हलफनामा दिखाई देगा...\n\nजानकारी भरने के बाद यह स्वतः अपडेट होता रहेगा।';
+    preview.style.color     = '#9ca3af';
+    preview.contentEditable = 'false';
+    preview.classList.add('placeholder');
+
+    editBadge.style.display   = 'none';
+    manualBadge.style.display = 'none';
+    resetBtn.style.display    = 'none';
+    editHint.style.display    = 'none';
+    pencilHint.style.display  = 'none';
+
+    document.getElementById('userDetailsForm').style.display = 'none';
+  }
+
+  /* ════════════════════════════════
+     EXPOSE GLOBALS (for onclick= attributes)
+  ════════════════════════════════ */
+  window.toggleSidebar      = toggleSidebar;
+  window.showUserForm       = showUserForm;
+  window.resetToAutoPreview = resetToAutoPreview;
+  window.openPreviewModal   = openPreviewModal;
+  window.closeModal         = closeModal;
+  window.doPrint            = doPrint;
+  window.createNewDraft     = createNewDraft;
+  window.handlePurposeSelect= handlePurposeSelect;
+
+  /* ════════════════════════════════
+     INIT
+  ════════════════════════════════ */
+  window.addEventListener('DOMContentLoaded', () => {
+    const d = document.getElementById('docDate');
+    if (d) d.valueAsDate = new Date();
+  });
+</script>
+ <!-- ── Shared nav logic ─────────────────────── -->
+    <script src="nav.js"></script>
+</body>
+</html>
