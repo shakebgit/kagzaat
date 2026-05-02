@@ -41,7 +41,7 @@ load_dotenv()
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-app = Flask(__name__, static_folder='frontend', static_url_path='')
+app = Flask(__name__, static_folder='backend/frontend', static_url_path='')
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # FIX 1: detect production environment for secure cookie flag
