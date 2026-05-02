@@ -13,7 +13,7 @@
     document.addEventListener("DOMContentLoaded", init);
 
     async function init() {
-        // 1. Identify logged-in user (nav.js already handles display;
+        // 1. Identify logged-in user (js/nav.js already handles display;
         //    we just need the user ID for API calls)
         await _loadUser();
 
@@ -43,7 +43,7 @@
             const data = await KagazatAPI.checkAuth();
             AppState.setUser(data.id || data.user_id || data.email || "", data.name || data.email || "");
         } catch (_) {
-            // nav.js will redirect to login; nothing to do here
+            // js/nav.js will redirect to login; nothing to do here
         }
     }
 

@@ -29,6 +29,14 @@ from functools import wraps
 import resend
 import base64
 
+#------------
+from weasyprint import HTML
+import bleach
+import re
+#-----------
+import logging
+logging.basicConfig(level=logging.INFO)
+
 # ── New blueprints ────────────────────────────────────────────
 from routes.location import location_bp
 from routes.lookup   import lookup_bp
@@ -43,6 +51,16 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 app = Flask(__name__, static_folder='frontend', static_url_path='')
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+#Error handling 
+@app.errorhandler(Exception)
+def handle_error(e):
+    app.logger.error(f"Unhandled Exception: {str(e)}")
+    return jsonify({
+        "status": "error",
+        "message": "Internal server error"
+    }), 500
+#--End--
 
 # FIX 1: detect production environment for secure cookie flag
 IS_PRODUCTION = os.getenv("FLASK_ENV", "development") == "production"
@@ -79,6 +97,9 @@ app.register_blueprint(location_bp)
 app.register_blueprint(lookup_bp)
 app.register_blueprint(template_bp)
 app.register_blueprint(affidavit_bp)
+
+
+#---
 
 
 # ──────────────────────────────────────────────
@@ -153,6 +174,22 @@ def sanitize_input(text) -> str:
     if text is None:
         return ""
     return re.sub(r"<[^>]*>", "", str(text)).strip()
+    
+    
+def success_response(data=None, message="Success", status_code=200):
+    return jsonify({
+        "success": True,
+        "data": data or {},
+        "message": message
+    }), status_code
+
+
+def error_response(message="Error", status_code=400):
+    return jsonify({
+        "success": False,
+        "data": {},
+        "message": message
+    }), status_code
 
 
 # ──────────────────────────────────────────────
@@ -740,11 +777,29 @@ def usertempletdetails():
 def generate_pdf():
     try:
         data       = request.json
-        html       = data.get("html")
+        html       = data.get("html","")
+        safe_html = bleach.clean(
+                        html,
+                        tags=[
+                        'p', 'b', 'i', 'u', 'strong', 'em',
+                        'h1', 'h2', 'h3', 'ul', 'ol', 'li',
+                        'br', 'span', 'div'
+                         ],
+                         attributes={'*': ['style']},
+                            strip=True
+                        )
+        if re.search(r'(http://|https://|file://|ftp://|//)', safe_html.lower()):
+            raise ValueError("External resources not allowed")
+        def safe_url_fetcher(url):
+            raise Exception("Blocked external resource")        
+        
         user_email = request.user_email
         timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        pdf      = HTML(string=html).write_pdf()
+        #pdf      = HTML(string=html).write_pdf()
+        pdf = HTML(   string=safe_html, url_fetcher=safe_url_fetcher,
+                    base_url=None  ).write_pdf()
+        
         filename = f"affidavit_NameChange_{timestamp}.pdf"
         filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 

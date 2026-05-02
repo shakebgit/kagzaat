@@ -6,13 +6,13 @@ are imported from their existing module — do not duplicate them here.
 """
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from config import Config
+from backend.config import Config
 
 # ── Existing auth blueprint (your file — adjust import path if needed) ──
 # from routes.auth import auth_bp
 
 # ── New blueprints ────────────────────────────────────────────
-from routes.location import location_bp
+from backend.routes.location import location_bp
 from routes.lookup   import lookup_bp
 from routes.template import template_bp
 from routes.affidavit import affidavit_bp

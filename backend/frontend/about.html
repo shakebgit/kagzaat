@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
      
     <script>
-    // nav.js handles all auth state — API_URL needed for translations only
+    // js/nav.js handles all auth state — API_URL needed for translations only
     const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:5000'
         : '';
@@ -481,7 +481,7 @@ body{font-size:15px;}
 
 <script>
 let currentLang = sessionStorage.getItem("lang") || "hi";
-// REMOVED: dead localStorage auth code — nav.js handles auth state
+// REMOVED: dead localStorage auth code — js/nav.js handles auth state
 
 function toggleLanguage() {
     currentLang = currentLang === "hi" ? "en" : "hi";
@@ -494,6 +494,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-<script src="nav.js"></script>
+<script src="js/nav.js"></script>
 </body>
 </html>

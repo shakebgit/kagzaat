@@ -84,7 +84,7 @@ const KagazatAPI = (function () {
         return request("PUT", `/affidavit/update/${id}`, payload);
     }
 
-    // ── Auth (read-only — writes stay in nav.js) ─────────────
+    // ── Auth (read-only — writes stay in js/nav.js) ─────────────
     function checkAuth() {
         return request("GET", "/check-auth");
     }

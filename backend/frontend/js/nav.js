@@ -1,5 +1,5 @@
 /**
- * nav.js  –  Kagazat Shared Navigation Module
+ * js/nav.js  –  Kagazat Shared Navigation Module
  * Version : 2.2.0  (all fixes applied)
  *
  * KEY FIXES:
