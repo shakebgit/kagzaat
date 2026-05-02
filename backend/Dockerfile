@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     shared-mime-info \
     fonts-liberation \
+    fonts-noto \
+    fonts-noto-extra \
     fontconfig \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
