@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kagazat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+        * { font-family: 'Noto Sans Devanagari', sans-serif; }
+        body { font-size: 15px; }
+        .text-xl  { font-size: 1rem   !important; }
+        .text-2xl { font-size: 1.2rem !important; }
+        .text-3xl { font-size: 1.4rem !important; }
+
+        /* Password toggle */
+        .input-wrapper { position: relative; }
+        .toggle-pw {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer; color: #6b7280; background: none; border: none;
+            font-size: 1rem;
+        }
+        .toggle-pw:hover { color: #2563eb; }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2px solid #fff; border-top-color: transparent;
+            border-radius: 50%; animation: spin .6s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- ── Navigation ─────────────────────────────── -->
+    <nav class="border-b border-gray-200 bg-white">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-bold text-blue-600">Kagazat</a>
+            <a href="index.html" class="text-gray-700 hover:text-blue-600 text-lg font-medium">← होम</a>
+        </div>
+    </nav>
+
+    <!-- ── Form Card ──────────────────────────────── -->
+    <main class="flex-1 flex items-center justify-center px-4 py-16">
+        <div class="w-full max-w-md">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-8">
+
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-4xl font-bold text-gray-900">Login करें</h1>
+                    <p class="text-gray-500 mt-2 text-lg">अपने खाते में प्रवेश करें</p>
+                </div>
+
+                <!-- Error / Success Banner -->
+                <div id="alertBanner" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-medium"></div>
+
+                <!-- Form -->
+                <form id="loginForm" onsubmit="handleLogin(event)" novalidate class="space-y-5">
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-gray-800 mb-1 font-semibold text-xl">
+                            ईमेल / Email
+                        </label>
+                        <input
+                            id="email" type="email" name="email"
+                            autocomplete="email" required
+                            placeholder="example@email.com"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                   transition"
+                        />
+                        <p id="emailErr" class="hidden text-red-600 text-sm mt-1"></p>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="password" class="text-gray-800 font-semibold text-xl">
+                                पासवर्ड / Password
+                            </label>
+                        </div>
+                        <div class="input-wrapper">
+                            <input
+                                id="password" type="password" name="password"
+                                autocomplete="current-password" required
+                                placeholder="••••••••"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                       transition pr-10"
+                            />
+                            <button type="button" class="toggle-pw" onclick="togglePassword('password', this)"
+                                    aria-label="Show/hide password">👁</button>
+                        </div>
+                        <p id="passwordErr" class="hidden text-red-600 text-sm mt-1"></p>
+                    </div>
+
+                    <!-- Forgot Password link -->
+                    <div class="text-right -mt-2">
+                        <a href="forgot-password.html"
+                           class="text-blue-600 hover:underline text-lg font-medium">
+                            पासवर्ड भूल गए? / Forgot Password?
+                        </a>
+                    </div>
+
+                    <!-- Submit -->
+                    <button id="loginBtn" type="submit"
+                            class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-xl
+                                   hover:bg-blue-700 active:scale-95 transition disabled:opacity-60
+                                   flex items-center justify-center gap-2">
+                        Login करें →
+                    </button>
+
+                </form>
+
+                <!-- Register link -->
+                <div class="mt-6 text-center text-gray-600 text-lg">
+                    खाता नहीं है?
+                    <a href="signup.html" class="text-blue-600 font-semibold hover:underline ml-1">
+                        नया खाता बनाएं
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // ── Config ───────────────────────────────────────────────
+    const API_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+            ? "http://127.0.0.1:5000"
+            : "";
+
+    // ── Redirect if already logged in ────────────────────────
+    (async function () {
+        try {
+            const r = await fetch(API_URL + "/check-auth", { credentials: "include" });
+            if (r.ok) window.location.href = "AI.html";
+        } catch (_) {}
+    })();
+
+    // ── Helpers ───────────────────────────────────────────────
+    function showAlert(msg, type = "error") {
+        const el = document.getElementById("alertBanner");
+        el.textContent = msg;
+        el.className = [
+            "mb-4 px-4 py-3 rounded-lg text-sm font-medium",
+            type === "error"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-700 border border-green-200",
+        ].join(" ");
+        el.classList.remove("hidden");
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function hideAlert() {
+        document.getElementById("alertBanner").classList.add("hidden");
+    }
+
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            btn.textContent = "🙈";
+        } else {
+            input.type = "password";
+            btn.textContent = "👁";
+        }
+    }
+
+    function setLoading(loading) {
+        const btn = document.getElementById("loginBtn");
+        if (loading) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> लॉगिन हो रहा है...';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = "Login करें →";
+        }
+    }
+
+    // ── Form handler ──────────────────────────────────────────
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideAlert();
+
+        const email    = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        // Client-side validation
+        if (!email) { showAlert("कृपया ईमेल दर्ज करें।"); return; }
+        if (!password) { showAlert("कृपया पासवर्ड दर्ज करें।"); return; }
+
+        setLoading(true);
+
+        try {
+            const res = await fetch(API_URL + "/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (data.status === "success") {
+                window.location.href = "AI.html";
+            } else {
+                showAlert(data.message || "Login विफल। कृपया पुनः प्रयास करें।");
+            }
+        } catch (_) {
+            showAlert("नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।");
+        } finally {
+            setLoading(false);
+        }
+    }
+    </script>
+<!-- ═══ JS MODULES — order matters ═══ -->
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/templateEngine.js"></script>
+<script src="/js/formRenderer.js"></script>
+<script src="/js/app.js"></script>
+<script src="js/nav.js"></script>
+</body>
+</html>
