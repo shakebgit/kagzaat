@@ -105,18 +105,18 @@ const KagazatNav = (function () {
     }
 
     // ── Logout ────────────────────────────────────────────────
-    async function handleLogout() {
-        try {
-            await fetch(API_URL + "/logout", {
-                method: "POST",
-                credentials: "include",
-            });
-        } catch (_) {
-            // network error — still redirect
-        } finally {
-            window.location.href = "login.html";
-        }
+   async function handleLogout() {
+    sessionStorage.removeItem("kaz_user");
+    try {
+        await fetch(API_URL + "/logout", {
+            method: "POST",
+            credentials: "include",
+        });
+    } catch (_) {}
+    finally {
+        window.location.href = "login.html";
     }
+}
 
     // ── Mobile menu ───────────────────────────────────────────
     function toggleMobileMenu() {
@@ -125,30 +125,38 @@ const KagazatNav = (function () {
     }
 
     // ── Init ──────────────────────────────────────────────────
-    async function init() {
-        // CRITICAL: show guest state immediately — do NOT wait for network
-        // This ensures Login/Register buttons are always visible on load
+   async function init() {
+    // Check sessionStorage first — instant, no flash
+    const cached = sessionStorage.getItem("kaz_user");
+    if (cached) {
+        const user = JSON.parse(cached);
+        showLoggedIn(user.name);
+    } else {
         showLoggedOut();
-
-        try {
-            const res = await fetch(API_URL + "/check-auth", {
-                credentials: "include",
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const user = data.data;       
-                AppState.setUser(user);               
-                showLoggedIn(user.name || user.email || "");
-               
-            }
-            // If not ok — showLoggedOut already called, nothing to do
-        } catch (_) {
-            // Network error — guest state already shown, nothing to do
-        }
-
-        initDropdown();
     }
 
+    // Always verify with server in background
+    try {
+        const res = await fetch(API_URL + "/check-auth", {
+            credentials: "include",
+        });
+        if (res.ok) {
+            const data = await res.json();
+            sessionStorage.setItem("kaz_user", JSON.stringify({
+                name: data.data.name || data.data.email || ""
+            }));
+            showLoggedIn(data.data.name || data.data.email || "");
+        } else {
+            sessionStorage.removeItem("kaz_user");
+            showLoggedOut();
+        }
+    } catch (_) {
+        sessionStorage.removeItem("kaz_user");
+        showLoggedOut();
+    }
+
+    initDropdown();
+}
     return { API_URL, init, handleLogout, toggleMobileMenu };
 })();
 
