@@ -26,4 +26,5 @@ EXPOSE 8080
 
 # --timeout 120: WeasyPrint PDF generation can take 10-30s on cold start
 # WEB_CONCURRENCY: Railway sets this automatically based on instance size
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers ${WEB_CONCURRENCY:-2} --timeout 120 app:app"]
+###CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers ${WEB_CONCURRENCY:-2} --timeout 120 app:app"]
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app
