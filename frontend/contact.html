@@ -399,14 +399,7 @@
 
 
     <script>
-    // ── Config ────────────────────────────────────────────────
-    const API_URL =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-            ? "http://127.0.0.1:5000"
-            : '';
-
-    // ── Character counter ─────────────────────────────────────
+     // ── Character counter ─────────────────────────────────────
     document.getElementById("cMessage").addEventListener("input", function () {
         document.getElementById("charCount").textContent = this.value.length;
     });
@@ -502,12 +495,7 @@
     }
     </script>
    <!-- ═══ JS MODULES — order matters ═══ -->
-<script src="/js/api.js"></script>
-<script src="/js/state.js"></script>
-<script src="/js/ui.js"></script>
-<script src="/js/templateEngine.js"></script>
-<script src="/js/formRenderer.js"></script>
-<script src="/js/app.js"></script>
+<script src="js/common.js"></script>
 <script src="js/nav.js"></script>
  
 </body>
